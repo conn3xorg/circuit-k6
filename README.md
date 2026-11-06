@@ -87,7 +87,7 @@ By default, k6 sends anonymous usage statistics to Grafana after each run. To tu
 
 ## Requirements
 
-Requires Conn3x v0.7.0 or later. Hosts need to reach GitHub to download the release. k6 itself needs nothing else.
+Requires Conn3x v0.7.1 or later. Hosts need to reach GitHub to download the release. k6 itself needs nothing else.
 
 ## Tested on
 
