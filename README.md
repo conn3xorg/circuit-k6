@@ -25,7 +25,7 @@ k6 run --vus 10 --duration 30s script.js
 
 To try it on a throwaway container first, see [examples/local](examples/local).
 
-## Moving to a new release
+## Upgrading k6
 
 The version and its checksums go together. Take both from the release's checksums file:
 
@@ -43,6 +43,17 @@ checksums = {
 ```
 
 The plan stops on a checksum that isn't 64 hex digits, and the apply stops on one that doesn't match the download. Read the release notes before you move to a new major version.
+
+## Removing k6
+
+Deleting the module from your configuration leaves k6 on the host. To remove it by hand, delete the link and the directory:
+
+```sh
+rm /usr/local/bin/k6
+rm -r /opt/k6
+```
+
+A single old version goes away the same way: remove its `/opt/k6/<version>` directory. Nothing else on the host is k6's.
 
 ## What it does
 
@@ -63,7 +74,7 @@ By default, k6 sends anonymous usage statistics to Grafana after each run. To tu
 - It doesn't run tests, schedule them or collect results. Run `k6` from your own scripts or CI, and send results where you like with `--out`.
 - It doesn't add k6 extensions. Those need a custom build with `xk6`.
 - It doesn't keep old versions tidy. A new `k6_version` leaves the previous one under `/opt/k6`.
-- Deleting the module leaves k6 in place.
+- Deleting the module leaves k6 in place; see [Removing k6](#removing-k6).
 
 ## Inputs
 
@@ -89,9 +100,20 @@ By default, k6 sends anonymous usage statistics to Grafana after each run. To tu
 
 Requires Conn3x v0.7.1 or later. Hosts need to reach GitHub to download the release. k6 itself needs nothing else.
 
+## When things go wrong
+
+- **The plan stops on a checksum that isn't 64 hex digits.** The entry in `checksums` is mistyped or truncated; copy it again from the release's checksums file, as in [Upgrading k6](#upgrading-k6).
+- **The apply stops on a checksum that doesn't match the download.** The checksums don't belong to `k6_version`; take the version and its checksums from the same release's checksums file.
+- **The download step fails.** The host can't reach GitHub; check its outbound access and any proxy it needs, then apply again.
+
 ## Tested on
 
-Rocky Linux 10, Fedora 45, Ubuntu 24.04 and Debian 13, with k6 2.3.0. [examples/local](examples/local) was applied to each in a container on arm64, and CI does the same on amd64. It checks that the second plan has no changes, starts a small HTTP listener on the host, runs a k6 test of five requests against it and checks that the exported summary counts five requests and ten passed checks, then points the test at a closed port and checks k6 fails it with exit code 99. After a restart of the container, `k6 version` runs and the plan has no changes.
+Rocky Linux 10, Fedora 45, Ubuntu 24.04 and Debian 13, with k6 2.3.0. [examples/local](examples/local) was applied to each in a container on arm64, and CI does the same on amd64. Each run:
+
+1. Applies the circuit, then checks that the second plan has no changes.
+2. Starts a small HTTP listener on the host, runs a k6 test of five requests against it, and checks that the exported summary counts five requests and ten passed checks.
+3. Points the test at a closed port and checks k6 fails it with exit code 99.
+4. Restarts the container, then checks that `k6 version` runs and the plan has no changes.
 
 On an Ubuntu 24.04 droplet and a Rocky Linux 10 droplet with SELinux enforcing, both `s-1vcpu-1gb`, the circuit was applied to both hosts at once and the same check passed. After a reboot, k6 ran and the plan had no changes.
 
